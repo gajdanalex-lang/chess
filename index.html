@@ -1,0 +1,82 @@
+<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stockfish Analyzer</title>
+<link rel="stylesheet" href="style.css"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#0b1020"></head><body><div class="wrap">
+<h1>♞ <span>Stockfish Analyzer</span> <small id="engn"></small></h1>
+<div id="st"><span id="tn"></span><span id="ev"></span></div>
+<div id="last"></div>
+<div id="eb"><div id="ew"></div></div>
+<div id="wdl"></div>
+<div id="eng" class="dim"></div>
+<div class="pl" id="top"></div>
+<div id="bw" data-bt="blue"><div id="b"></div><svg id="ar" viewBox="0 0 8 8"></svg><div id="promo"></div></div>
+<div class="pl" id="bot"></div>
+<div class="leg"><span><i style="background:#22c55e"></i>best</span><span><i style="background:#facc15"></i>decent</span><span><i style="background:#ef4444"></i>worst</span></div>
+<div class="row"><button onclick="goFirst()">⏮</button><button onclick="goPrev()">◀</button><button onclick="goNext()">▶</button><button onclick="goLast()">⏭</button></div>
+<div class="row"><button onclick="undo()">↶ Undo</button><button onclick="flipB()">⇅ Flip</button><button onclick="rst()">⟲ New</button><button onclick="hint()">💡 Hint</button><button onclick="playBest()">✅ Best</button><button onclick="rnd()">🎲 Random</button></div>
+<div class="row">
+<label>Lines <select data-s="lines"><option>1</option><option>2</option><option>3</option><option>5</option></select></label>
+<label>Level <select id="lv" data-s="level"></select></label>
+<label><input type="checkbox" data-s="auto"> Auto</label></div>
+<div class="card"><div class="lab">Best moves</div><div id="out"></div></div>
+<div class="card" id="opn"></div>
+<div class="card"><div class="lab">Book moves from here</div><div id="book"></div></div>
+<div class="card"><div class="lab">Evaluation graph<span id="acc"></span></div><div id="graph"></div>
+<div class="row"><button id="aab" onclick="analyzeAll()">📊 Analyze whole game</button><span id="aprog" class="dim"></span></div></div>
+<div class="card"><div class="lab">Moves</div><div id="mvl"></div></div>
+
+<details class="card"><summary>🤖 Play vs Stockfish</summary>
+<div class="row"><label>Strength <select data-s="elo"><option value="1320">1320 Beginner</option><option value="1500">1500</option><option value="1700">1700</option><option value="1800">1800</option><option value="1900">1900</option><option value="2100">2100</option><option value="2300">2300</option><option value="2500">2500</option><option value="2800">2800</option><option value="3190">3190 Max</option></select></label></div>
+<div class="row"><button onclick="startVs('w')">Play White</button><button onclick="startVs('b')">Play Black</button><button onclick="startVs('r')">Random</button><button onclick="stopVs()">Stop</button></div>
+<div class="row"><button onclick="startWatch()">📺 Watch engine vs engine</button><label><input type="checkbox" data-s="vsHints"> Hints while playing</label></div>
+<div class="dim">Strength = how well it plays. Level = how long it thinks.</div></details>
+
+<details class="card"><summary>⏱ Chess clock</summary>
+<div class="row"><label>Minutes <select data-s="tcmin"><option value="0">Off</option><option value="1">1</option><option value="3">3</option><option value="5">5</option><option value="10">10</option><option value="15">15</option><option value="30">30</option></select></label>
+<label>Increment <select data-s="tcinc"><option value="0">0s</option><option value="1">1s</option><option value="2">2s</option><option value="5">5s</option><option value="10">10s</option></select></label></div>
+<div class="dim">Clock starts after White's first move. Changing it restarts the clocks.</div></details>
+
+<details class="card"><summary>🎯 Positions &amp; opening trainer</summary>
+<div class="row"><select id="pre" onchange="loadPreset(this.value)"></select></div>
+<input type="text" id="tq" placeholder="Trainer filter, e.g. Sicilian (optional)">
+<div class="row"><button onclick="startTrainer()">Start trainer</button><button onclick="trainerHint()">Trainer hint</button><button onclick="stopTrainer()">Stop</button></div>
+<div id="trinfo" class="dim"></div></details>
+
+<details class="card"><summary id="osum">Browse openings</summary>
+<input type="text" id="q" placeholder="Search: Sicilian, Najdorf, B90, Gambit…" oninput="search()">
+<div class="chips" id="chips"></div><div id="res"></div></details>
+
+<details class="card"><summary>📋 Game: FEN, PGN, saves</summary>
+<input type="text" id="fen">
+<div class="row"><button onclick="copyText($('fen').value)">Copy FEN</button><button onclick="loadFenBox()">Load FEN</button></div>
+<textarea id="pgn" placeholder="PGN goes here. Paste one and tap Import."></textarea>
+<div class="row"><button onclick="exportPgn()">Export</button><button onclick="copyText($('pgn').value)">Copy</button><button onclick="importPgn()">Import</button><button onclick="sharePgn()">Share</button></div>
+<div class="row"><button onclick="saveGame()">💾 Save game</button></div>
+<div id="saves"></div></details>
+
+<details class="card"><summary>⚙️ Settings</summary>
+<div class="row"><label>Theme <select data-s="theme"><option value="dark">Dark</option><option value="light">Light</option></select></label>
+<label>Board <select data-s="bt"><option value="blue">Blue</option><option value="green">Green</option><option value="brown">Wood</option><option value="purple">Purple</option><option value="grey">Grey</option><option value="night">Night</option></select></label></div>
+<div class="opts">
+<label><input type="checkbox" data-s="sound"> Sounds</label>
+<label><input type="checkbox" data-s="haptic"> Vibration</label>
+<label><input type="checkbox" data-s="speak"> Speak moves</label>
+<label><input type="checkbox" data-s="coords"> Coordinates</label>
+<label><input type="checkbox" data-s="legal"> Legal-move dots</label>
+<label><input type="checkbox" data-s="showArr"> Arrows</label>
+<label><input type="checkbox" data-s="words"> Plain-English moves</label>
+<label><input type="checkbox" data-s="autoq"> Auto-queen</label>
+<label><input type="checkbox" data-s="wake"> Keep screen on</label></div>
+<div class="lab">Engine</div>
+<div class="row"><label>Threads <select id="thr" onchange="cfg('threads='+this.value)"></select></label>
+<label>Hash MB <select id="hsh" onchange="cfg('hash='+this.value)"><option>16</option><option>32</option><option>64</option><option>128</option><option>256</option><option>512</option></select></label></div>
+<div class="row"><button onclick="cfg('clear=1')">Clear cache</button><button onclick="quitServer()">⛔ Stop server</button></div></details>
+
+<details class="card"><summary>❓ Help</summary><div class="dim">
+Tap or drag pieces. ◀ ▶ step through moves; tap the graph or a move to jump. Keys: ← → Home End, F flip, Z undo, H hint, B best move, N new game.
+Green arrow = best, yellow = decent, red = worst. Marks: ?! inaccuracy, ? mistake, ?? blunder (shown once the position is analyzed).
+To stop everything: Settings → Stop server, or Ctrl+C in Termux, or run: bash ~/chess/stop.sh</div></details>
+</div>
+<div id="toast"></div><div id="ghost"></div>
+<script src="engine.js"></script><script src="chess.js"></script><script src="app1.js"></script><script src="app2.js"></script><script src="app3.js"></script><script src="app4.js"></script><script src="app5.js"></script><script src="app6.js"></script>
+</body></html>
